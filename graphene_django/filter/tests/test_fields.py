@@ -9,7 +9,6 @@ from graphene_django.forms import (GlobalIDFormField,
                                    GlobalIDMultipleChoiceField)
 from graphene_django.tests.models import Article, Pet, Reporter
 from graphene_django.utils import DJANGO_FILTER_INSTALLED
-from graphene_django.registry import Registry, reset_global_registry
 
 pytestmark = []
 
@@ -25,8 +24,6 @@ pytestmark.append(pytest.mark.django_db)
 
 
 if DJANGO_FILTER_INSTALLED:
-    reset_global_registry()
-
     class ArticleNode(DjangoObjectType):
 
         class Meta:
@@ -49,10 +46,6 @@ if DJANGO_FILTER_INSTALLED:
             interfaces = (Node, )
 
     # schema = Schema()
-
-@pytest.fixture
-def _registry():
-    return Registry()
 
 
 def get_args(field):
@@ -141,28 +134,26 @@ def test_filter_shortcut_filterset_extra_meta():
     assert 'headline' not in field.filterset_class.get_fields()
 
 
-def test_filter_filterset_information_on_meta(_registry):
+def test_filter_filterset_information_on_meta():
     class ReporterFilterNode(DjangoObjectType):
 
         class Meta:
             model = Reporter
             interfaces = (Node, )
             filter_fields = ['first_name', 'articles']
-            registry = _registry
 
     field = DjangoFilterConnectionField(ReporterFilterNode)
     assert_arguments(field, 'first_name', 'articles')
     assert_not_orderable(field)
 
 
-def test_filter_filterset_information_on_meta_related(_registry):
+def test_filter_filterset_information_on_meta_related():
     class ReporterFilterNode(DjangoObjectType):
 
         class Meta:
             model = Reporter
             interfaces = (Node, )
             filter_fields = ['first_name', 'articles']
-            registry = _registry
 
     class ArticleFilterNode(DjangoObjectType):
 
@@ -170,7 +161,6 @@ def test_filter_filterset_information_on_meta_related(_registry):
             model = Article
             interfaces = (Node, )
             filter_fields = ['headline', 'reporter']
-            registry = _registry
 
     class Query(ObjectType):
         all_reporters = DjangoFilterConnectionField(ReporterFilterNode)
@@ -184,14 +174,13 @@ def test_filter_filterset_information_on_meta_related(_registry):
     assert_not_orderable(articles_field)
 
 
-def test_filter_filterset_related_results(_registry):
+def test_filter_filterset_related_results():
     class ReporterFilterNode(DjangoObjectType):
 
         class Meta:
             model = Reporter
             interfaces = (Node, )
             filter_fields = ['first_name', 'articles']
-            registry = _registry
 
     class ArticleFilterNode(DjangoObjectType):
 
@@ -199,7 +188,6 @@ def test_filter_filterset_related_results(_registry):
             interfaces = (Node, )
             model = Article
             filter_fields = ['headline', 'reporter']
-            registry = _registry
 
     class Query(ObjectType):
         all_reporters = DjangoFilterConnectionField(ReporterFilterNode)
@@ -327,7 +315,7 @@ def test_global_id_multiple_field_explicit_reverse():
     assert multiple_filter.field_class == GlobalIDMultipleChoiceField
 
 
-def test_filter_filterset_related_results(_registry):
+def test_filter_filterset_related_results():
     class ReporterFilterNode(DjangoObjectType):
 
         class Meta:
@@ -336,7 +324,6 @@ def test_filter_filterset_related_results(_registry):
             filter_fields = {
                 'first_name': ['icontains']
             }
-            registry = _registry
 
     class Query(ObjectType):
         all_reporters = DjangoFilterConnectionField(ReporterFilterNode)

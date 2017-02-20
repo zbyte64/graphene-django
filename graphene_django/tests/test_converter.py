@@ -11,13 +11,12 @@ from graphene.types.json import JSONString
 from ..compat import (ArrayField, HStoreField, JSONField, MissingType,
                       RangeField, UUIDField, DurationField)
 from ..converter import convert_django_field, convert_django_field_with_choices
-from ..registry import Registry, reset_global_registry
+from ..registry import Registry
 from ..types import DjangoObjectType
 from .models import Article, Film, FilmDetails, Reporter
 
 
-def setup_function(function):
-  reset_global_registry()
+# from graphene.core.types.custom_scalars import DateTime, Time, JSONString
 
 
 def assert_conversion(django_field, graphene_field, *args, **kwargs):
