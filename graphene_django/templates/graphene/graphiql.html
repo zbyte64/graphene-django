@@ -107,13 +107,13 @@ add "&raw" to the end of the URL within a browser.
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
         onEditOperationName: onEditOperationName,
-        query: '{{ query|escapejs }}',
+        query: '{{ params.query|escapejs }}',
         response: '{{ result|escapejs }}',
-        {% if variables %}
-        variables: '{{ variables|escapejs }}',
+        {% if params.variables %}
+        variables: '{{ params.variables|escapejs }}',
         {% endif %}
-        {% if operation_name %}
-        operationName: '{{ operation_name|escapejs }}',
+        {% if params.operation_name %}
+        operationName: '{{ params.operation_name|escapejs }}',
         {% endif %}
       }),
       document.body
