@@ -179,7 +179,6 @@ def test_batch_allows_post_with_json_encoding(client):
     assert response_json(response) == [{
         'id': 1,
         'data': {'test': "Hello World"},
-        'status': 200,
     }]
 
 
@@ -234,7 +233,6 @@ def test_batch_supports_post_json_query_with_string_variables(client):
     assert response_json(response) == [{
         'id': 1,
         'data': {'test': "Hello Dolly"},
-        'status': 200,
     }]
 
 
@@ -261,7 +259,6 @@ def test_batch_supports_post_json_query_with_json_variables(client):
     assert response_json(response) == [{
         'id': 1,
         'data': {'test': "Hello Dolly"},
-        'status': 200,
     }]
 
 
@@ -360,7 +357,6 @@ def test_batch_allows_post_with_operation_name(client):
             'test': 'Hello World',
             'shared': 'Hello Everyone'
         },
-        'status': 200,
     }]
 
 
@@ -444,7 +440,7 @@ def test_handles_not_expected_json_bodies(client):
 
     assert response.status_code == 400
     assert response_json(response) == {
-        'errors': [{'message': 'The received data is not a valid JSON query.'}]
+        'errors': [{'message': 'Batch GraphQL requests are not enabled.'}]
     }
 
 
