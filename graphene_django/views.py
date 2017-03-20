@@ -1,5 +1,6 @@
 import inspect
 import json
+from functools import partial
 import re
 
 from django.http import HttpResponse
@@ -9,7 +10,9 @@ from django.views.generic import View
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from graphql.type.schema import GraphQLSchema
-from graphql_server import run_http_query, HttpQueryError, default_format_error, load_json_body
+from graphql_server import (HttpQueryError, default_format_error,
+                            encode_execution_results, json_encode,
+                            load_json_body, run_http_query)
 
 from .settings import graphene_settings
 
@@ -44,10 +47,6 @@ def instantiate_middleware(middlewares):
             yield middleware()
             continue
         yield middleware
-
-
-def flatten(multidict):
-    return {x:multidict.get(x) for x in multidict.keys()}
 
 
 class GraphQLView(View):
@@ -90,34 +89,36 @@ class GraphQLView(View):
     def get_context(self, request):
         return request
 
-    def get_executor(self):
+    def get_executor(self, request):
         return self.executor
 
     def render_graphiql(self, request, params, result):
         return render(request, self.graphiql_template, dict(
-            params=params,
+            query=params and params.query,
+            operation_name=params and params.operation_name,
+            variables=params and params.variables,
             result=result,
         ))
+
+    format_error = staticmethod(default_format_error)
+    encode = staticmethod(json_encode)
 
     @method_decorator(ensure_csrf_cookie)
     def dispatch(self, request, *args, **kwargs):
         try:
             request_method = request.method.lower()
-            get_params = flatten(request.GET)
             data = self.parse_body(request)
-
-            if isinstance(data, dict):
-                data = dict(data, **get_params)
 
             show_graphiql = request_method == 'get' and self.should_display_graphiql(request)
             catch = HttpQueryError if show_graphiql else None
 
             pretty = self.pretty or show_graphiql or request.GET.get('pretty')
 
-            result, status_code, all_params = run_http_query(
+            execution_results, all_params = run_http_query(
                 self.schema,
                 request_method,
                 data,
+                query_data=request.GET,
                 batch_enabled=self.batch,
                 catch=catch,
 
@@ -125,10 +126,14 @@ class GraphQLView(View):
                 root_value=self.get_root_value(request),
                 context_value=self.get_context(request),
                 middleware=self.get_middleware(request),
-                executor=self.get_executor(),
+                executor=self.get_executor(request),
             )
-
-            result = self.json_encode(result, pretty)
+            result, status_code = encode_execution_results(
+                execution_results,
+                is_batch=isinstance(data, list),
+                format_error=self.format_error,
+                encode=partial(self.encode, pretty=pretty)
+            )
 
             if show_graphiql:
                 return self.render_graphiql(
@@ -145,7 +150,7 @@ class GraphQLView(View):
 
         except HttpQueryError as e:
             response = HttpResponse(
-                self.json_encode({
+                self.encode({
                     'errors': [default_format_error(e)]
                 }),
                 status=e.status_code,
@@ -168,27 +173,15 @@ class GraphQLView(View):
         # information provided by content_type
         content_type = self.get_content_type(request)
         if content_type == 'application/graphql':
-            return {'query': request.body.decode()}
+            return {'query': request.body.decode('utf-8')}
 
         elif content_type == 'application/json':
             return load_json_body(request.body.decode('utf-8'))
 
-        elif content_type == 'application/x-www-form-urlencoded' \
-          or content_type == 'multipart/form-data':
-            return flatten(request.POST)
+        elif content_type in ('application/x-www-form-urlencoded', 'multipart/form-data'):
+            return request.POST
 
         return {}
-
-    @staticmethod
-    def json_encode(data, pretty=False):
-        if not pretty:
-            return json.dumps(data, separators=(',', ':'))
-
-        return json.dumps(
-            data,
-            indent=2,
-            separators=(',', ': ')
-        )
 
     def should_display_graphiql(self, request):
         if not self.graphiql or 'raw' in request.GET:
