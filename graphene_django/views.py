@@ -53,7 +53,6 @@ class GraphQLView(View):
     schema = None
     executor = None
     root_value = None
-    context = None
     pretty = False
     graphiql = False
     graphiql_version = '0.7.8'
@@ -94,6 +93,7 @@ class GraphQLView(View):
 
     def render_graphiql(self, request, params, result):
         return render(request, self.graphiql_template, dict(
+            graphiql_version=self.graphiql_version,
             query=params and params.query,
             operation_name=params and params.operation_name,
             variables=params and params.variables,
