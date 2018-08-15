@@ -1,6 +1,7 @@
 import inspect
 import json
 import re
+import logging
 
 import six
 from django.http import HttpResponse, HttpResponseNotAllowed
@@ -17,6 +18,9 @@ from graphql.execution import ExecutionResult
 from graphql.type.schema import GraphQLSchema
 
 from .settings import graphene_settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class HttpError(Exception):
@@ -155,6 +159,7 @@ class GraphQLView(View):
             )
 
         except HttpError as e:
+            logger.exception(str(e))
             response = e.response
             response["Content-Type"] = "application/json"
             response.content = self.json_encode(
