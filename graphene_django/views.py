@@ -258,7 +258,6 @@ class GraphQLView(View):
             backend = self.get_backend(request)
             document = backend.document_from_string(self.schema, query)
         except Exception as e:
-            logger.exception(str(e))
             return ExecutionResult(errors=[e], invalid=True)
 
         if request.method.lower() == "get":
