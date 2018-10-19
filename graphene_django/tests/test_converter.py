@@ -95,6 +95,10 @@ def test_should_auto_convert_id():
     assert_conversion(models.UUIDField, graphene.UUID)
 
 
+def test_should_auto_convert_decimal():
+    assert_conversion(models.DecimalField, graphene.Decimal)
+
+
 def test_should_auto_convert_duration():
     assert_conversion(models.DurationField, graphene.Float)
 
